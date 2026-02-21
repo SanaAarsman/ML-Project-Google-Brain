@@ -1,0 +1,47 @@
+Medical tests research.
+
+
+MaxHR: 
+
+* The maximum heart rate achieved, this test is usually done involving a monitored and graded exercise test (treadmill or bicycle) 
+ and can cost from 100$ to 300$ in the US.
+
+
+Exercise Angina:
+
+* An Exercise Angina test, commonly known as an exercise stress test or treadmill test, evaluates how well the heart 
+ handles stress by monitoring its electrical activity and blood pressure while the patient walks on a treadmill or rides 
+ a stationary bike. The test is designed to bring on symptoms of angina in a controlled setting to diagnose coronary artery disease.
+
+* The test stops when you reach your target heart rate, are too tired, or if you develop significant symptoms like chest pain, 
+ abnormal heart rhythm, or concerning blood pressure changes.
+
+* Can cost from 175$ to 5 000$ in the US, depends on:
+
+    * Standard exercise test (175$ to 400$);
+    * Stress Echocardiogram (1 000$ to 3 500$);
+    * Nuclear Stress Test (600$ to 5 000$).
+
+
+OldPeak:
+
+* An "Oldpeak" test is not a standalone diagnostic procedure, but rather a key measurement derived from an 
+ Exercise Treadmill Test (ETT), also known as a Stress Test. Oldpeak refers specifically to the amount of ST 
+ segment depression (a marker on an electrocardiogram) induced by exercise, comparing it to the level at rest.
+ A higher numerical value for oldpeak suggests a greater risk of heart disease, specifically myocardial ischemia, 
+ as it indicates a reduced blood supply to the heart during exertion.
+
+* Can cost from 25 000$ to 60 000$ in the US.
+
+ST Slope:
+
+* The test is performed in a clinical setting using a treadmill or bicycle ergometer, 
+ often adhering to the Bruce protocol (gradual increases in speed and gradient).
+
+* The patient exercises until they reach maximum effort, exhaustion, develop symptoms (e.g., chest pain),
+  or reach a target heart rate.
+
+* Typical price range in US: 200$ to 1 500$.
+
+
+Notes: Prices always depends on country wise and facility wise.
