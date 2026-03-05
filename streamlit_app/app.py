@@ -1,120 +1,74 @@
 import os
-from flask import app
 import joblib
 import pandas as pd
 import streamlit as st
 
-
-
-st.set_page_config(page_title="Heart Disease Prediction", page_icon="🫀", layout="centered")
-
+# -------------------------
+# Load model
+# -------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models.pkl")
-DATA_PATH = os.path.join(BASE_DIR, "heart_disease.csv")
+model = joblib.load(os.path.join(BASE_DIR, "models.pkl"))
 
+st.title("🫀 Heart Disease Prediction App")
 
-# -----------------------------
-# Load model (Pipeline: preprocessing + classifier)
-# -----------------------------
-@st.cache_resource
-def load_model(path: str):
-    return joblib.load(path)
+st.write("Enter patient information below to estimate heart disease risk.")
 
-model = load_model(MODEL_PATH)
+# -------------------------
+# User Inputs
+# -------------------------
 
+age = st.slider("Age", 20, 90, 50)
 
-# Optional: load dataset only to set sensible defaults
-@st.cache_data
-def load_data(path: str):
-    if os.path.exists(path):
-        return pd.read_csv(path)
-    return None
+sex_ui = st.selectbox("Sex", ["Male", "Female"])
+sex = "M" if sex_ui == "Male" else "F"
 
-df = load_data(DATA_PATH)
+chest_ui = st.selectbox(
+    "Chest Pain Type",
+    [
+        "Typical Angina",
+        "Atypical Angina",
+        "Non-Anginal Pain",
+        "Asymptomatic"
+    ]
+)
 
+chest_map = {
+    "Typical Angina": "TA",
+    "Atypical Angina": "ATA",
+    "Non-Anginal Pain": "NAP",
+    "Asymptomatic": "ASY"
+}
 
-def default_for(col: str, fallback):
-    """Use dataset median/mode as default if CSV exists, otherwise fallback."""
-    if df is None or col not in df.columns:
-        return fallback
-    s = df[col].dropna()
-    if s.empty:
-        return fallback
-    if pd.api.types.is_numeric_dtype(s):
-        return float(s.median())
-    return str(s.mode().iloc[0])
+chest_pain = chest_map[chest_ui]
 
+resting_bp = st.number_input("Resting Blood Pressure", 80, 200, 120)
 
-st.title("🫀 Heart Disease Prediction")
-st.write("Fill in the patient information below and click **Predict**.")
+cholesterol = st.number_input("Cholesterol", 100, 600, 200)
 
+fasting_ui = st.selectbox("Fasting Blood Sugar > 120 mg/dl", ["No", "Yes"])
+fasting_bs = 1 if fasting_ui == "Yes" else 0
 
-# -----------------------------
-# Input form
-# -----------------------------
-with st.form("prediction_form"):
-    st.subheader("Patient data")
+resting_ecg = st.selectbox("Resting ECG", ["Normal", "ST", "LVH"])
 
-    col1, col2, col3 = st.columns(3)
+max_hr = st.slider("Maximum Heart Rate", 60, 220, 150)
 
-    # Numeric inputs
-    with col1:
-        age = st.number_input("Age", min_value=1, max_value=120,
-                              value=int(default_for("Age", 40)), step=1)
-        resting_bp = st.number_input("RestingBP", min_value=0, max_value=300,
-                                     value=int(default_for("RestingBP", 120)), step=1)
-        cholesterol = st.number_input("Cholesterol", min_value=0, max_value=700,
-                                      value=int(default_for("Cholesterol", 200)), step=1)
-        max_hr = st.number_input("MaxHR", min_value=0, max_value=250,
-                                 value=int(default_for("MaxHR", 150)), step=1)
+exercise_ui = st.selectbox("Exercise Induced Angina", ["No", "Yes"])
+exercise_angina = "Y" if exercise_ui == "Yes" else "N"
 
-    with col2:
-        fasting_bs = st.selectbox("FastingBS (0/1)", options=[0, 1],
-                                  index=0 if int(default_for("FastingBS", 0)) == 0 else 1)
-        oldpeak = st.number_input("Oldpeak", min_value=-10.0, max_value=10.0,
-                                  value=float(default_for("Oldpeak", 0.0)), step=0.1)
+oldpeak = st.number_input("ST Depression (Oldpeak)", 0.0, 6.0, 1.0)
 
-    # Categorical inputs (match dataset categories)
-    with col3:
-        sex = st.selectbox("Sex", options=["M", "F"],
-                           index=0 if default_for("Sex", "M") == "M" else 1)
+st_slope = st.selectbox("ST Segment Slope", ["Up", "Flat", "Down"])
 
-        chest_pain_type = st.selectbox(
-            "ChestPainType",
-            options=["ASY", "ATA", "NAP", "TA"],
-            index=["ASY", "ATA", "NAP", "TA"].index(default_for("ChestPainType", "ASY"))
-            if default_for("ChestPainType", "ASY") in ["ASY", "ATA", "NAP", "TA"] else 0
-        )
+# -------------------------
+# Prediction
+# -------------------------
 
-        resting_ecg = st.selectbox(
-            "RestingECG",
-            options=["Normal", "ST", "LVH"],
-            index=["Normal", "ST", "LVH"].index(default_for("RestingECG", "Normal"))
-            if default_for("RestingECG", "Normal") in ["Normal", "ST", "LVH"] else 0
-        )
+if st.button("Predict"):
 
-        exercise_angina = st.selectbox(
-            "ExerciseAngina",
-            options=["N", "Y"],
-            index=0 if default_for("ExerciseAngina", "N") == "N" else 1
-        )
-
-        st_slope = st.selectbox(
-            "ST_Slope",
-            options=["Up", "Flat", "Down"],
-            index=["Up", "Flat", "Down"].index(default_for("ST_Slope", "Flat"))
-            if default_for("ST_Slope", "Flat") in ["Up", "Flat", "Down"] else 1
-        )
-
-    submitted = st.form_submit_button("Predict")
-
-
-if submitted:
-    # Build a single-row dataframe with EXACT column names used in training
-    X_input = pd.DataFrame([{
+    input_data = pd.DataFrame([{
         "Age": age,
         "Sex": sex,
-        "ChestPainType": chest_pain_type,
+        "ChestPainType": chest_pain,
         "RestingBP": resting_bp,
         "Cholesterol": cholesterol,
         "FastingBS": fasting_bs,
@@ -122,36 +76,27 @@ if submitted:
         "MaxHR": max_hr,
         "ExerciseAngina": exercise_angina,
         "Oldpeak": oldpeak,
-        "ST_Slope": st_slope,
+        "ST_Slope": st_slope
     }])
 
-    try:
-        pred = model.predict(X_input)[0]
+    # Debug: show the data sent to model
+    st.subheader("Input Data")
+    st.write(input_data)
 
-        # Some models/pipelines support predict_proba
-        proba = None
-        if hasattr(model, "predict_proba"):
-            proba = model.predict_proba(X_input)[0]
-        elif hasattr(model, "named_steps") and hasattr(model.named_steps.get("clf", None), "predict_proba"):
-            proba = model.named_steps["clf"].predict_proba(model.named_steps["preprocess"].transform(X_input))[0]
+    prediction = model.predict(input_data)[0]
 
-        st.markdown("---")
-        st.subheader("Result")
+    # Probability
+    probability = None
+    if hasattr(model, "predict_proba"):
+        probability = model.predict_proba(input_data)[0][1]
 
-        if pred == 1:
-            st.error("Prediction: **Heart Disease (1)**")
-        else:
-            st.success("Prediction: **No Heart Disease (0)**")
+    st.subheader("Prediction")
 
-        if proba is not None and len(proba) == 2:
-            st.write(f"Probability of Heart Disease (class 1): **{proba[1]*100:.1f}%**")
-            st.progress(float(proba[1]))
+    if prediction == 1:
+        st.error("⚠️ Risk of Heart Disease")
+    else:
+        st.success("✅ Low Risk of Heart Disease")
 
-        with st.expander("Show input data"):
-            st.dataframe(X_input)
-
-    except Exception as e:
-        st.error("Something went wrong during prediction.")
-        st.exception(e)
-    
- 
+    if probability is not None:
+        st.write(f"Risk Probability: **{probability*100:.2f}%**")
+        st.progress(float(probability))
